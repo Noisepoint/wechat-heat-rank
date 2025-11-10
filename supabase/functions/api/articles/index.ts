@@ -73,22 +73,25 @@ function buildQuery(supabase: any, params: ArticleQueryParams) {
       cover,
       pub_time,
       url,
+      summary,
       tags,
-      biz_id,
+      account_id,
       accounts!fk_articles (
         id,
         name,
-        star
+        star,
+        is_active
       ),
       scores!fk_articles_scores (
+        time_window,
         proxy_heat
       )
     `)
-    .eq('scores.window', params.window || '7d')
+    .eq('scores.time_window', params.window || '7d')
 
   // 账号筛选
   if (params.account) {
-    query = query.eq('accounts.id', params.account)
+    query = query.eq('account_id', params.account)
   }
 
   // 标签筛选 (tags参数是逗号分隔的字符串)
