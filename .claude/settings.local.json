@@ -5,7 +5,8 @@
       "Bash(npm test:*)",
       "Bash(npm install)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node -e \"\nconst exp = Math.exp;\nconsole.log(''12小时:'', exp(-12/36));\nconsole.log(''36小时:'', exp(-36/36));\nconsole.log(''72小时:'', exp(-72/36));\n\")"
     ],
     "deny": [],
     "ask": []

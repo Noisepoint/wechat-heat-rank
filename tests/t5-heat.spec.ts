@@ -9,10 +9,10 @@ describe('T5 代理热度计算器测试', () => {
       const heat = require(join(projectRoot, 'supabase/functions/_shared/heat.ts'));
 
       const testCases = [
-        { hours: 0, expected: 1.0 },     // 刚发布
-        { hours: 12, expected: 0.7188 }, // 12小时后
-        { hours: 36, expected: 0.3689 }, // 36小时后
-        { hours: 72, expected: 0.1353 }  // 72小时后
+        { hours: 0, expected: 1.0 },                    // 刚发布
+        { hours: 12, expected: 0.7165313105737893 },    // 12小时后
+        { hours: 36, expected: 0.36787944117144233 },   // 36小时后
+        { hours: 72, expected: 0.1353352832366127 }    // 72小时后
       ];
 
       testCases.forEach(({ hours, expected }) => {
