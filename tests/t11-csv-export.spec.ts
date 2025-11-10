@@ -266,7 +266,7 @@ describe('T11 CSV导出功能测试', () => {
       const content = await response.text()
 
       expect(response.ok).toBe(true)
-      expect(content).toContain('"""引号""")')
+      expect(content).toContain('"包含""引号""的文章"')
       expect(content).toContain('"包含,逗号的摘要"')
     })
   })
