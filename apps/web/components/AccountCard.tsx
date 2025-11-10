@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { HEAT_LEVELS } from '@/constants/discover'
 
 interface AccountCardProps {
   account: {
@@ -33,10 +34,10 @@ export default function AccountCard({ account, onAddAccount }: AccountCardProps)
   }
 
   const formatHeat = (heat: number) => {
-    if (heat >= 90) return { level: '极高', color: 'text-red-600', bg: 'bg-red-100' }
-    if (heat >= 75) return { level: '高', color: 'text-orange-600', bg: 'bg-orange-100' }
-    if (heat >= 50) return { level: '中', color: 'text-yellow-600', bg: 'bg-yellow-100' }
-    return { level: '低', color: 'text-gray-600', bg: 'bg-gray-100' }
+    if (heat >= HEAT_LEVELS.VERY_HIGH.min) return HEAT_LEVELS.VERY_HIGH
+    if (heat >= HEAT_LEVELS.HIGH.min) return HEAT_LEVELS.HIGH
+    if (heat >= HEAT_LEVELS.MEDIUM.min) return HEAT_LEVELS.MEDIUM
+    return HEAT_LEVELS.LOW
   }
 
   const handleAddAccount = async () => {

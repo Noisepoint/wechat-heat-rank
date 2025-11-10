@@ -1,25 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { SEARCH_SUGGESTIONS, DEBOUNCE_DELAY, SEARCH_HISTORY_LIMIT } from '@/constants/discover'
 
 interface DiscoverSearchProps {
   onSearch: (query: string) => void
   query: string
   loading: boolean
 }
-
-const SEARCH_SUGGESTIONS = [
-  'AI工具',
-  'AI绘画',
-  'AI写作',
-  'AI编程',
-  '效率工具',
-  '办公技巧',
-  '编程技术',
-  '前端开发',
-  '后端开发',
-  '产品设计'
-]
 
 export default function DiscoverSearch({ onSearch, query, loading }: DiscoverSearchProps) {
   const [inputValue, setInputValue] = useState(query)
@@ -50,7 +38,7 @@ export default function DiscoverSearch({ onSearch, query, loading }: DiscoverSea
       if (inputValue.trim() !== query) {
         onSearch(inputValue.trim())
       }
-    }, 500) // 500ms防抖
+    }, DEBOUNCE_DELAY)
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -93,7 +81,7 @@ export default function DiscoverSearch({ onSearch, query, loading }: DiscoverSea
   }
 
   const addToHistory = (searchQuery: string) => {
-    const newHistory = [searchQuery, ...searchHistory.filter(q => q !== searchQuery)].slice(0, 10)
+    const newHistory = [searchQuery, ...searchHistory.filter(q => q !== searchQuery)].slice(0, SEARCH_HISTORY_LIMIT)
     setSearchHistory(newHistory)
     localStorage.setItem('discover_search_history', JSON.stringify(newHistory))
   }

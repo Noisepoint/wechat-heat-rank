@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DiscoverSearch from '@/components/DiscoverSearch'
 import AccountCard from '@/components/AccountCard'
+import { DEFAULT_PAGE_SIZE } from '@/constants/discover'
 
 interface DiscoverAccount {
   id?: string
@@ -57,7 +58,7 @@ export default function DiscoverPage() {
       const params = new URLSearchParams({
         query: searchQuery,
         page: pageNum.toString(),
-        limit: '12',
+        limit: DEFAULT_PAGE_SIZE.toString(),
         sort_by: sort,
         sort_order: order,
         min_star: minStarFilter.toString()
