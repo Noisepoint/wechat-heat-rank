@@ -6,7 +6,12 @@
       "Bash(npm install)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(node -e \"\nconst exp = Math.exp;\nconsole.log(''12小时:'', exp(-12/36));\nconsole.log(''36小时:'', exp(-36/36));\nconsole.log(''72小时:'', exp(-72/36));\n\")"
+      "Bash(node -e \"\nconst exp = Math.exp;\nconsole.log(''12小时:'', exp(-12/36));\nconsole.log(''36小时:'', exp(-36/36));\nconsole.log(''72小时:'', exp(-72/36));\n\")",
+      "Bash(npm install:*)",
+      "Bash(brew install:*)",
+      "Bash(supabase:*)",
+      "Bash(cat:*)",
+      "Bash(DATABASE_SETUP.sql)"
     ],
     "deny": [],
     "ask": []
