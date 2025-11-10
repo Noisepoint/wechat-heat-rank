@@ -231,7 +231,7 @@ AI前沿观察,https://mp.weixin.qq.com/s?__biz=MzAxNjY5MDQxMA==,4
       ];
 
       const mockValidateRow = (row: any) => {
-        return row.name.trim() &&
+        return Boolean(row.name.trim()) &&
                row.seed_url.includes('mp.weixin.qq.com') &&
                row.seed_url.includes('__biz=') &&
                row.star >= 1 &&
@@ -249,7 +249,8 @@ AI前沿观察,https://mp.weixin.qq.com/s?__biz=MzAxNjY5MDQxMA==,4
       const mockAccounts = [
         { name: '账号1', seed_url: 'https://mp.weixin.qq.com/s?__biz=test1', star: 4 },
         { name: '账号2', seed_url: 'https://mp.weixin.qq.com/s?__biz=test2', star: 3 },
-        { name: '账号3', seed_url: 'https://mp.weixin.qq.com/s?__biz=test1', star: 5 } // 重复
+        { name: '账号3', seed_url: 'https://mp.weixin.qq.com/s?__biz=test1', star: 5 }, // 重复biz_id
+        { name: '账号4', seed_url: 'https://mp.weixin.qq.com/s?__biz=', star: 4 } // 空biz_id
       ];
 
       const existingBizIds = ['test1'];
@@ -278,8 +279,8 @@ AI前沿观察,https://mp.weixin.qq.com/s?__biz=MzAxNjY5MDQxMA==,4
       const result = mockImportResult(mockAccounts, existingBizIds);
 
       expect(result.inserted).toBe(1); // 只有账号2是新账号
-      expect(result.skipped).toBe(1); // 账号3重复
-      expect(result.errors).toHaveLength(1); // 账号1没有biz_id
+      expect(result.skipped).toBe(2); // 账号1和账号3重复
+      expect(result.errors).toHaveLength(1); // 账号4没有biz_id
     });
   });
 
