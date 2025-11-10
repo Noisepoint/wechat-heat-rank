@@ -219,8 +219,10 @@ describe('T3 HTML解析器测试', () => {
         <html>
           <head>
             <meta property="og:description" content="这是OG描述内容">
+            <title>测试文章</title>
           </head>
           <body>
+            <p>2025年01月15日 10:30</p>
             <p>这是正文内容</p>
           </body>
         </html>
@@ -234,8 +236,11 @@ describe('T3 HTML解析器测试', () => {
       const parser = require(join(projectRoot, 'supabase/functions/_shared/parser.ts'));
       const htmlWithoutOgDesc = `
         <html>
-          <head></head>
+          <head>
+            <title>测试文章</title>
+          </head>
           <body>
+            <p>2025年01月15日 10:30</p>
             <p>这是第一段文字，应该被提取为摘要。</p>
             <p>这是第二段文字。</p>
           </body>
@@ -254,7 +259,11 @@ describe('T3 HTML解析器测试', () => {
         <html>
           <head>
             <meta property="og:description" content="${longText}">
+            <title>测试文章</title>
           </head>
+          <body>
+            <p>2025年01月15日 10:30</p>
+          </body>
         </html>
       `;
 
