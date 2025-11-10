@@ -1,4 +1,4 @@
-import { URL } from 'url';
+import { URL } from 'node:url';
 
 // 常用的正则表达式模式
 const TIME_PATTERNS = [

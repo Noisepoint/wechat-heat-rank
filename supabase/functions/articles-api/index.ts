@@ -76,13 +76,13 @@ function buildQuery(supabase: any, params: ArticleQueryParams) {
       summary,
       tags,
       account_id,
-      accounts!fk_articles (
+      accounts!inner (
         id,
         name,
         star,
         is_active
       ),
-      scores!fk_articles_scores (
+      scores!inner (
         time_window,
         proxy_heat
       )
