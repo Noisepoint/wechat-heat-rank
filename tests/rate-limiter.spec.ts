@@ -8,34 +8,33 @@ vi.mock('@supabase/supabase-js', () => ({
 }))
 
 const mockSupabase = {
-  from: vi.fn(),
-  select: vi.fn(),
-  eq: vi.fn(),
-  single: vi.fn(),
-  insert: vi.fn(),
-  update: vi.fn(),
-  order: vi.fn(),
-  limit: vi.fn()
+  from: vi.fn(() => mockSupabase),
+  select: vi.fn(() => mockSupabase),
+  eq: vi.fn(() => mockSupabase),
+  single: vi.fn(() => mockSupabase),
+  insert: vi.fn(() => mockSupabase),
+  update: vi.fn(() => mockSupabase),
+  order: vi.fn(() => mockSupabase),
+  limit: vi.fn(() => mockSupabase),
+  gte: vi.fn(() => mockSupabase),
+  lt: vi.fn(() => mockSupabase),
+  data: null,
+  error: null
 }
 
 describe('Rate Limiter - TDD Tests for T12', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createClient).mockReturnValue(mockSupabase as any)
+    // Reset mock data
+    mockSupabase.data = null
+    mockSupabase.error = null
   })
 
   describe('fetchRateLimits', () => {
     it('should return default rate limits when no settings exist', async () => {
-      mockSupabase.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockReturnValue({
-            data: null,
-            error: null
-          })
-        })
-      })
-    } as any)
+      mockSupabase.data = null
+      mockSupabase.error = null
 
       const limits = await fetchRateLimits()
 
