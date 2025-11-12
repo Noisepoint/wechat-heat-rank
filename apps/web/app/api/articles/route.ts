@@ -79,20 +79,25 @@ export async function GET(req: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 })
     }
 
-    const items = (data as ArticleItem[] | null)?.map((a) => ({
-      id: a.id,
-      title: a.title,
-      cover: a.cover,
-      pub_time: a.pub_time,
-      url: a.url,
-      tags: a.tags,
-      account: {
-        id: a.accounts.id,
-        name: a.accounts.name,
-        star: a.accounts.star,
-      },
-      proxy_heat: a.scores?.proxy_heat ?? 0,
-    })) ?? []
+    const rows = (data as any[] | null) ?? []
+    const items = rows.map((a: any) => {
+      const acc = Array.isArray(a.accounts) ? a.accounts[0] : a.accounts
+      const sc = Array.isArray(a.scores) ? a.scores[0] : a.scores
+      return {
+        id: a.id,
+        title: a.title,
+        cover: a.cover,
+        pub_time: a.pub_time,
+        url: a.url,
+        tags: a.tags,
+        account: {
+          id: acc?.id,
+          name: acc?.name,
+          star: acc?.star,
+        },
+        proxy_heat: sc?.proxy_heat ?? 0,
+      }
+    })
 
     const total = count ?? 0
     const hasMore = offset + limit < total
