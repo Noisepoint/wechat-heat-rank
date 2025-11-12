@@ -11,7 +11,7 @@ export function extractBizId(url: string): string {
   const m1 = url.match(/[?&]__biz=([^&]+)/);
   if (m1 && m1[1]) return m1[1];
   // Fallback: sometimes appears in path like /s/__biz=xxxx
-  const m2 = url.match(/\\/s\\/__biz=([^&?#]+)/);
+  const m2 = url.match(/\/s\/__biz=([^&?#]+)/);
   if (m2 && m2[1]) return m2[1];
   throw new Error(`Invalid WeChat article URL: ${url}`);
 }
