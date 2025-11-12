@@ -151,7 +151,13 @@ export default function SettingsPage() {
   }
 
   const renderWeightsTab = () => {
-    const weights = settings.heat_weights || {}
+    const weights = settings.heat_weights ?? {
+      time_decay: 0,
+      account: 0,
+      title_ctr: 0,
+      buzz: 0,
+      freshness: 0
+    }
 
     return (
       <div className="space-y-6">
