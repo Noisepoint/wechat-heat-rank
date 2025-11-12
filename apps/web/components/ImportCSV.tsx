@@ -48,7 +48,8 @@ export default function ImportCSV({ isOpen, onClose, onSuccess }: ImportCSVProps
       const result: ImportResult = await response.json()
 
       if (!response.ok) {
-        setError(result.error || '导入失败')
+        const firstError = result.errors && result.errors.length > 0 ? result.errors[0].reason : undefined
+        setError(firstError || '导入失败')
         return
       }
 
