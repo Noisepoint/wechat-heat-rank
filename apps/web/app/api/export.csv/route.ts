@@ -25,26 +25,31 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient()
 
-    // 构建查询
+    // 构建查询（与数据库类型一致）
     let query = supabase
       .from('articles')
       .select(`
         title,
         summary,
         pub_time,
+        tags,
+        url,
         accounts!inner(
           name,
           biz_id
         ),
-        heat,
-        tags,
-        url,
-        read_count,
-        like_count
+        scores!inner(
+          time_window,
+          proxy_heat
+        )
       `)
       .eq('accounts.is_active', true)
 
-    // 时间窗口过滤
+    // 时间窗口过滤（基于 scores.time_window）
+    const targetWindow = filters.window || '7d'
+    query = query.eq('scores.time_window', targetWindow)
+
+    // 时间下限（可选）
     if (filters.window) {
       const timeFilter = getTimeFilter(filters.window)
       query = query.gte('pub_time', timeFilter)
@@ -60,9 +65,9 @@ export async function GET(request: NextRequest) {
       query = query.in('accounts.biz_id', filters.accounts)
     }
 
-    // 热度过滤
+    // 热度过滤（基于 scores.proxy_heat）
     if (filters.min_heat !== undefined) {
-      query = query.gte('heat', filters.min_heat)
+      query = query.gte('scores.proxy_heat', filters.min_heat)
     }
 
     // 搜索过滤
@@ -72,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     // 排序和限制
     query = query
-      .order('heat', { ascending: false })
+      .order('scores.proxy_heat', { ascending: false })
       .order('pub_time', { ascending: false })
       .limit(MAX_EXPORT_RECORDS)
 
@@ -87,16 +92,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换数据格式
-    const exportData: ArticleExport[] = (articles || []).map(article => ({
+    const exportData: ArticleExport[] = (articles as any[] | null || []).map((article: any) => ({
       title: article.title || '',
       summary: article.summary || '',
       pub_time: article.pub_time || '',
       author_name: article.accounts?.name || '',
-      heat: article.heat || 0,
+      heat: article.scores?.proxy_heat || 0,
       tags: article.tags || [],
       url: article.url || '',
-      read_count: article.read_count || 0,
-      like_count: article.like_count || 0
+      read_count: 0,
+      like_count: 0
     }))
 
     // 生成CSV内容
