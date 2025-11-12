@@ -67,7 +67,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (sort === 'heat_desc') {
-      query = query.order('scores.proxy_heat', { ascending: false }).order('pub_time', { ascending: false })
+      // Order by joined table column: use foreignTable option
+      // see: https://supabase.com/docs/reference/javascript/order
+      // @ts-ignore
+      query = (query as any).order('proxy_heat', { foreignTable: 'scores', ascending: false })
+      query = query.order('pub_time', { ascending: false })
     } else if (sort === 'time_desc') {
       query = query.order('pub_time', { ascending: false })
     }
