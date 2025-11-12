@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { extractBizId } from '@/lib/parser'
+import { resolveBizIdFromUrl } from '@/lib/wechat'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -34,21 +35,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证URL格式
-    if (!seed_url.includes('mp.weixin.qq.com') || !seed_url.includes('__biz=')) {
-      return NextResponse.json(
-        { error: 'Invalid WeChat article URL' },
-        { status: 400 }
-      )
-    }
-
-    // 提取biz_id
-    const bizId = extractBizId(seed_url)
+    // 提取 biz_id，支持短链自动解析
+    let bizId = extractBizId(seed_url)
     if (!bizId) {
-      return NextResponse.json(
-        { error: 'Cannot extract biz_id from URL' },
-        { status: 400 }
-      )
+      bizId = await resolveBizIdFromUrl(seed_url)
+    }
+    if (!bizId) {
+      return NextResponse.json({ error: 'Invalid WeChat link, unable to resolve __biz' }, { status: 400 })
     }
 
     // 检查账号是否已存在

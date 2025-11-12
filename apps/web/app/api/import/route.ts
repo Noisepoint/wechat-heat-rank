@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { extractBizId } from '@/lib/parser'
+import { resolveBizIdFromUrl } from '@/lib/wechat'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -104,10 +105,13 @@ export async function POST(request: NextRequest) {
 
     for (const row of rows) {
       try {
-        // 提取biz_id
-        const bizId = extractBizId(row.seed_url)
+        // 提取/解析 biz_id，支持短链
+        let bizId = extractBizId(row.seed_url)
         if (!bizId) {
-          errors.push({ row: rows.indexOf(row) + 2, reason: 'Cannot extract biz_id' })
+          bizId = await resolveBizIdFromUrl(row.seed_url) || ''
+        }
+        if (!bizId) {
+          errors.push({ row: rows.indexOf(row) + 2, reason: 'Cannot resolve __biz from link' })
           continue
         }
 
@@ -178,10 +182,6 @@ function validateCSVRow(row: CSVRow, rowNum: number): Array<{ row: number; reaso
   // 验证URL
   if (!row.seed_url.includes('mp.weixin.qq.com')) {
     errors.push({ row: rowNum, reason: 'Invalid WeChat URL' })
-  }
-
-  if (!row.seed_url.includes('__biz=')) {
-    errors.push({ row: rowNum, reason: 'URL must contain __biz parameter' })
   }
 
   // 验证星级
