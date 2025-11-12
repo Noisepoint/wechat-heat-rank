@@ -1,3 +1,4 @@
+// Supabase server-side client typed with Database
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../database.types'
 
