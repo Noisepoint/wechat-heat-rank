@@ -87,6 +87,7 @@ function buildQuery(supabase: any, params: ArticleQueryParams) {
         proxy_heat
       )
     `)
+    .eq('accounts.is_active', true)
     .eq('scores.time_window', params.window || '7d')
 
   // 账号筛选
@@ -155,8 +156,18 @@ async function handleGetRequest(url: URL): Promise<{ status: number; body: any }
     }
 
     // 初始化Supabase客户端
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+    const supabaseKey =
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+      Deno.env.get('SERVICE_ROLE_KEY') ??
+      Deno.env.get('SUPABASE_ANON_KEY') ??
+      Deno.env.get('ANON_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        status: 500,
+        body: { error: 'Missing Supabase credentials' }
+      }
+    }
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 构建查询

@@ -62,8 +62,20 @@ async function handlePostRequest(req: Request): Promise<{ status: number; body: 
     const { article_ids, force_all } = body
 
     // 初始化Supabase客户端
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        status: 500,
+        body: { error: 'Missing Supabase credentials' }
+      }
+    }
+    if (Deno.env.get('READ_ONLY_MODE') === 'true') {
+      return {
+        status: 503,
+        body: { error: 'Relabel disabled in read-only mode' }
+      }
+    }
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 获取分类规则

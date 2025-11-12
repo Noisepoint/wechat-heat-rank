@@ -1,18 +1,29 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { triggerManualRefresh } from '../scheduler/index'
+import { triggerManualRefresh } from '../scheduler/index.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase credentials for refresh API')
 }
+const READ_ONLY_MODE = Deno.env.get('READ_ONLY_MODE') === 'true'
 
 serve(async (req) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+  }
+
+  if (READ_ONLY_MODE) {
+    return new Response(
+      JSON.stringify({ error: 'Service in read-only mode' }),
+      {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
 
   if (req.method === 'OPTIONS') {

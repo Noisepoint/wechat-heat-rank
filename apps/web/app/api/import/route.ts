@@ -4,6 +4,7 @@ import { extractBizId } from '@/../../supabase/functions/_shared/parser'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const isReadOnly = process.env.READ_ONLY_MODE === 'true'
 
 interface CSVRow {
   name: string
@@ -13,6 +14,13 @@ interface CSVRow {
 
 export async function POST(request: NextRequest) {
   try {
+    if (isReadOnly) {
+      return NextResponse.json(
+        { error: 'Service is currently read-only' },
+        { status: 503 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
 
@@ -123,8 +131,9 @@ export async function POST(request: NextRequest) {
             biz_id: bizId,
             seed_url: row.seed_url,
             star: row.star,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            is_active: true,
+            article_count: 0,
+            last_fetched: null
           })
 
         if (insertError) {

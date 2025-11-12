@@ -5,8 +5,16 @@ import { extractBizId } from '@/../../supabase/functions/_shared/parser'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+const isReadOnly = process.env.READ_ONLY_MODE === 'true'
+
 export async function POST(request: NextRequest) {
   try {
+    if (isReadOnly) {
+      return NextResponse.json(
+        { error: 'Service is currently read-only' },
+        { status: 503 }
+      )
+    }
     const body = await request.json()
     const { seed_url, star } = body
 
@@ -72,11 +80,12 @@ export async function POST(request: NextRequest) {
         biz_id: bizId,
         seed_url: seed_url,
         star: star,
-        name: '待解析', // 将通过后续抓取更新
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        name: '待解析',
+        is_active: true,
+        article_count: 0,
+        last_fetched: null
       })
-      .select()
+      .select('id, name, biz_id, seed_url, star, created_at, updated_at, is_active, last_fetched, article_count')
       .single()
 
     if (insertError) {

@@ -29,7 +29,7 @@
 - **同域并发=1**、抖动与指数退避保留
 
 **新增索引：**
-- `articles(pub_time)`、`articles(account_id, pub_time)`、`scores(window, proxy_heat)`、`articles.tags GIN`
+- `articles(pub_time)`、`articles(account_id, pub_time)`、`scores(time_window, proxy_heat)`、`articles.tags GIN`
 
 **前端设置页增强：**
 - 保存前**预览排序差异**（Top 20 对比）
@@ -76,8 +76,8 @@ create index if not exists idx_articles_pub_time
 create index if not exists idx_articles_account_time
   on public.articles(account_id, pub_time desc);
 
-create index if not exists idx_scores_window_heat
-  on public.scores(window, proxy_heat desc);
+create index if not exists idx_scores_time_window_heat
+  on public.scores(time_window, proxy_heat desc);
 
 create index if not exists idx_articles_tags_gin
   on public.articles using gin (tags);

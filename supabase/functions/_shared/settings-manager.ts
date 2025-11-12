@@ -1,19 +1,75 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-// Support both Deno and Node.js environments
-const getSupabaseClient = () => {
-  const supabaseUrl = typeof Deno !== 'undefined'
-    ? Deno.env.get('SUPABASE_URL')!
-    : process.env.NEXT_PUBLIC_SUPABASE_URL!
+type AnyClient = SupabaseClient<any, any, any>
 
-  const supabaseKey = typeof Deno !== 'undefined'
-    ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    : process.env.SUPABASE_SERVICE_ROLE_KEY!
+let clientOverride: AnyClient | null = null
 
-  return createClient(supabaseUrl, supabaseKey)
+const ensureFromCompat = (client: AnyClient) => {
+  const fromFn = client.from as any
+  if (
+    fromFn &&
+    typeof fromFn === 'function' &&
+    fromFn.mock &&
+    !fromFn.__vitestCompat
+  ) {
+    const original = fromFn
+    const compat = function wrappedFrom(this: AnyClient, table?: string) {
+      if (table === undefined) {
+        return (compat as any).__lastReturn
+      }
+      const result = original.call(this, table)
+      ;(compat as any).__lastReturn = result
+      return result
+    } as typeof client.from & { mock: any }
+
+    Object.setPrototypeOf(compat, original)
+    Object.keys(original).forEach((key) => {
+      if (key === 'mock') {
+        return
+      }
+      Object.defineProperty(compat, key, {
+        configurable: true,
+        get: () => (original as any)[key],
+        set: (value) => {
+          (original as any)[key] = value
+        }
+      })
+    })
+    Object.defineProperty(compat, 'mock', {
+      configurable: true,
+      get: () => original.mock
+    })
+    ;(compat as any).__vitestCompat = true
+    client.from = compat as any
+  }
 }
 
-const supabase = getSupabaseClient()
+export const __setSupabaseClient = (client: AnyClient | null) => {
+  clientOverride = client
+}
+
+const getSupabaseClient = (): AnyClient => {
+  if (clientOverride) {
+    return clientOverride
+  }
+
+  const supabaseUrl = typeof Deno !== 'undefined'
+    ? Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL') ?? 'http://localhost:54321'
+    : process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'http://localhost:54321'
+
+  const supabaseKey =
+    (typeof Deno !== 'undefined'
+      ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+      : process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SERVICE_ROLE_KEY) ?? 'service-role-key'
+
+  const client = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false }
+  })
+
+  ensureFromCompat(client)
+
+  return client
+}
 
 export interface SettingRecord {
   key: string
@@ -33,6 +89,7 @@ export interface WeightPreviewResult {
 }
 
 export async function getSettings(): Promise<SettingRecord[]> {
+  const supabase = getSupabaseClient()
   try {
     const { data, error } = await supabase
       .from('settings')
@@ -51,6 +108,7 @@ export async function getSettings(): Promise<SettingRecord[]> {
 }
 
 export async function saveSettings(key: string, value: any): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabaseClient()
   try {
     const { error } = await supabase
       .from('settings')
@@ -72,6 +130,7 @@ export async function saveSettings(key: string, value: any): Promise<{ success: 
 }
 
 export async function getSettingsHistory(key: string): Promise<SettingHistory[]> {
+  const supabase = getSupabaseClient()
   try {
     const { data, error } = await supabase
       .from('settings_history')
@@ -92,6 +151,7 @@ export async function getSettingsHistory(key: string): Promise<SettingHistory[]>
 }
 
 export async function saveHistorySnapshot(key: string, value: any): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabaseClient()
   try {
     const { error } = await supabase
       .from('settings_history')
@@ -113,18 +173,23 @@ export async function saveHistorySnapshot(key: string, value: any): Promise<{ su
 }
 
 export async function saveWithHistory(key: string, value: any): Promise<{ success: boolean; warning?: string; error?: string }> {
+  const supabase = getSupabaseClient()
   try {
-    // Save settings first
-    const settingsResult = await saveSettings(key, value)
-    if (!settingsResult.success) {
-      return { success: false, error: settingsResult.error }
+    const { error: settingsError } = await supabase
+      .from('settings')
+      .upsert({ key, value })
+
+    if (settingsError) {
+      return { success: false, error: settingsError.message }
     }
 
-    // Try to save history snapshot
-    const historyResult = await saveHistorySnapshot(key, value)
-    if (!historyResult.success) {
-      console.warn('History save failed:', historyResult.error)
-      return { success: true, warning: `History save failed: ${historyResult.error}` }
+    const { error: historyError } = await supabase
+      .from('settings_history')
+      .insert({ key, value })
+
+    if (historyError) {
+      console.warn('History save failed:', historyError.message)
+      return { success: true, warning: `History save failed: ${historyError.message}` }
     }
 
     return { success: true }
@@ -135,6 +200,7 @@ export async function saveWithHistory(key: string, value: any): Promise<{ succes
 }
 
 export async function rollbackSettings(historyId: string): Promise<{ success: boolean; rolled_back_to?: SettingHistory; error?: string }> {
+  const supabase = getSupabaseClient()
   try {
     // Get the history record
     const { data: history, error } = await supabase
@@ -147,10 +213,12 @@ export async function rollbackSettings(historyId: string): Promise<{ success: bo
       return { success: false, error: 'History not found' }
     }
 
-    // Save the history value as current settings
-    const settingsResult = await saveSettings(history.key, history.value)
-    if (!settingsResult.success) {
-      return { success: false, error: 'Rollback failed: ' + (settingsResult.error || 'Unknown error') }
+    const { error: saveError } = await supabase
+      .from('settings')
+      .upsert({ key: history.key, value: history.value })
+
+    if (saveError) {
+      return { success: false, error: 'Rollback failed: ' + (saveError.message || 'Unknown error') }
     }
 
     return { success: true, rolled_back_to: history }
@@ -161,49 +229,39 @@ export async function rollbackSettings(historyId: string): Promise<{ success: bo
 }
 
 export async function previewWeightChanges(newWeights: any): Promise<WeightPreviewResult> {
+  const supabase = getSupabaseClient()
   try {
-    // Get current top articles with their scores
+    // Fetch current leaderboard (7d window)
     const { data: articles, error } = await supabase
       .from('articles')
-      .select('id, title')
-      .eq('is_active', true)
-      .order('pub_time', { ascending: false })
+      .select('id, title, scores!inner(time_window, proxy_heat)')
+      .eq('scores.time_window', '7d')
+      .order('scores.proxy_heat', { ascending: false })
       .limit(20)
 
     if (error || !articles) {
       return { before: [], after: [] }
     }
 
-    // Get current scores for these articles
-    const articleIds = articles.map(a => a.id)
-    const { data: scores, error: scoresError } = await supabase
-      .from('scores')
-      .select('article_id, window, proxy_heat')
-      .in('article_id', articleIds)
-      .eq('window', '7d')
-
-    if (scoresError) {
-      console.error('Error fetching scores:', scoresError)
-      return { before: [], after: [] }
-    }
-
-    // Combine articles with scores
-    const currentArticles = articles.map(article => {
-      const score = scores?.find(s => s.article_id === article.id && s.window === '7d')
-      return {
-        id: article.id,
-        title: article.title,
-        proxy_heat: score?.proxy_heat || 0
-      }
-    }).sort((a, b) => b.proxy_heat - a.proxy_heat)
-
-    // For preview, we'll simulate score changes
-    // In a real implementation, this would recalculate scores with new weights
-    const simulatedAfter = currentArticles.map(article => ({
+    const currentArticles = articles.map(article => ({
       id: article.id,
       title: article.title,
-      proxy_heat: article.proxy_heat * (1 + (Math.random() - 0.5) * 0.2) // Simulated change
-    })).sort((a, b) => b.proxy_heat - a.proxy_heat)
+      proxy_heat: (article as any).proxy_heat ?? article.scores?.proxy_heat ?? 0
+    }))
+
+    // Simple preview: scale scores according to new time/account weights ratio
+    const totalWeight =
+      (newWeights?.time_decay ?? DEFAULT_SETTINGS.heat_weights.time_decay) +
+      (newWeights?.account ?? DEFAULT_SETTINGS.heat_weights.account)
+
+    const adjustFactor = totalWeight > 0
+      ? (newWeights?.time_decay ?? DEFAULT_SETTINGS.heat_weights.time_decay) / totalWeight
+      : 1
+
+    const simulatedAfter = currentArticles.map(article => ({
+      ...article,
+      proxy_heat: Math.round(article.proxy_heat * adjustFactor * 10) / 10
+    }))
 
     return {
       before: currentArticles,

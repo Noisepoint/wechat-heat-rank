@@ -98,7 +98,7 @@ describe('T6 Edge Function fetch-articles测试', () => {
           }
           if (table === 'scores') {
             expect(data.article_id).toBe(1);
-            expect(data.window).toBeDefined();
+            expect(data.time_window).toBeDefined();
             expect(data.proxy_heat).toBeGreaterThan(0);
             return { id: 1 };
           }
@@ -114,7 +114,7 @@ describe('T6 Edge Function fetch-articles测试', () => {
       for (const window of windows) {
         const scoreId = await mockDB.insert('scores', {
           article_id: articleId.id,
-          window,
+          time_window: window,
           proxy_heat: Math.random() * 100
         });
         expect(scoreId.id).toBe(1);

@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 interface RecomputeRequest {
   article_ids?: string[]
   time_windows?: string[]
+  windows?: string[]
   force_all?: boolean
 }
 
@@ -146,8 +147,7 @@ function calculateProxyHeat(
   account: any,
   weights: HeatWeights,
   timeDecayHours: number,
-  freshnessHours: number,
-  timeWindow: string
+  freshnessHours: number
 ): number {
   const now = new Date()
 
@@ -183,20 +183,32 @@ function calculateProxyHeat(
 async function handlePostRequest(req: Request): Promise<{ status: number; body: any }> {
   try {
     const body: RecomputeRequest = await req.json()
-    const { article_ids, time_windows, force_all } = body
+    const { article_ids, time_windows, windows: windowsParam, force_all } = body
 
     // 验证时间窗口
-    const windows = time_windows || VALID_WINDOWS
+    const windows = windowsParam || time_windows || VALID_WINDOWS
     if (windows.some(w => !VALID_WINDOWS.includes(w))) {
       return {
         status: 400,
-        body: { error: 'Invalid time_window parameter. Must be one of: 24h, 3d, 7d, 30d' }
+        body: { error: 'Invalid window parameter. Must be one of: 24h, 3d, 7d, 30d' }
       }
     }
 
     // 初始化Supabase客户端
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        status: 500,
+        body: { error: 'Missing Supabase credentials' }
+      }
+    }
+    if (Deno.env.get('READ_ONLY_MODE') === 'true') {
+      return {
+        status: 503,
+        body: { error: 'Recompute disabled in read-only mode' }
+      }
+    }
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 获取配置
@@ -257,14 +269,14 @@ async function handlePostRequest(req: Request): Promise<{ status: number; body: 
           article.accounts,
           settings.heatWeights,
           settings.timeDecayHours,
-          settings.freshnessHours,
-          window
+          settings.freshnessHours
         )
 
         updates.push({
           article_id: article.id,
           time_window: window,
-          proxy_heat: proxyHeat
+          proxy_heat: proxyHeat,
+          recalculated_at: now.toISOString()
         })
       }
     }

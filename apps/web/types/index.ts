@@ -12,7 +12,14 @@ export interface Article {
 export interface Account {
   id: string;
   name: string;
+  biz_id: string;
+  seed_url: string;
   star: number;
+  is_active: boolean;
+  last_fetched?: string | null;
+  article_count?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ArticleResponse {
@@ -53,19 +60,6 @@ export interface ArticleListState {
   pagination: PaginationState;
 }
 
-export interface Account {
-  id: string;
-  name: string;
-  biz_id: string;
-  seed_url: string;
-  star: number;
-  last_fetched?: string;
-  article_count?: number;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface AddAccountRequest {
   seed_url: string;
   star: number;
@@ -78,6 +72,10 @@ export interface AddAccountResponse {
   seed_url: string;
   star: number;
   created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  last_fetched: string | null;
+  article_count: number;
 }
 
 export interface ImportResult {

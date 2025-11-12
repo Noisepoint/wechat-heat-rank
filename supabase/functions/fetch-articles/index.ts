@@ -9,6 +9,7 @@ const MAX_ARTICLES_PER_FETCH = 10
 const FETCH_TIMEOUT = 30000 // 30秒超时
 const MIN_DELAY_BETWEEN_REQUESTS = 2500 // 2.5秒基础延迟
 const MAX_DELAY_VARIATION = 800 // ±0.8秒变化
+const READ_ONLY_MODE = Deno.env.get('READ_ONLY_MODE') === 'true'
 
 interface FetchRequest {
   biz_id: string
@@ -194,11 +195,11 @@ async function saveHeatScores(supabase: any, articleId: number, article: Article
         .from('scores')
         .upsert({
           article_id: articleId,
-          window: window.name,
+          time_window: window.name,
           proxy_heat: heatScore,
-          updated_at: now
+          recalculated_at: now
         }, {
-          onConflict: 'article_id,window'
+          onConflict: 'article_id,time_window'
         })
 
       if (error) throw error
@@ -332,12 +333,25 @@ async function handleFetchArticles(request: FetchRequest): Promise<FetchResult> 
     }
   }
 
+  if (READ_ONLY_MODE) {
+    return {
+      success: false,
+      processed: 0,
+      new: 0,
+      updated: 0,
+      errors: ['Fetch service is currently read-only']
+    }
+  }
+
   // 限制抓取数量
   const limit = Math.min(request.limit || MAX_ARTICLES_PER_FETCH, MAX_ARTICLES_PER_FETCH)
 
   // 初始化Supabase客户端
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials for fetch-articles function')
+  }
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {

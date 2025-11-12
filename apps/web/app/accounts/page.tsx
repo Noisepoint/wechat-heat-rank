@@ -13,6 +13,7 @@ export default function AccountsPage() {
   const [error, setError] = useState<string | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const readOnly = process.env.NEXT_PUBLIC_READ_ONLY_MODE === 'true'
 
   const loadAccounts = async () => {
     try {
@@ -38,23 +39,25 @@ export default function AccountsPage() {
   }, [])
 
   const handleAddAccount = (account: AddAccountResponse) => {
+    if (readOnly) return
     // 添加到列表顶部
     const newAccount: Account = {
       ...account,
-      last_fetched: undefined,
+      last_fetched: account.last_fetched ?? null,
       article_count: 0,
-      active: true,
       updated_at: account.created_at
     }
     setAccounts(prev => [newAccount, ...prev])
   }
 
   const handleImport = (result: ImportResult) => {
+    if (readOnly) return
     // 重新加载列表以反映导入结果
     loadAccounts()
   }
 
   const handleUpdateStar = async (accountId: string, newStar: number) => {
+    if (readOnly) return
     try {
       const response = await fetch(`/api/accounts/${accountId}`, {
         method: 'PATCH',
@@ -80,6 +83,7 @@ export default function AccountsPage() {
   }
 
   const handleToggleActive = async (accountId: string, active: boolean) => {
+    if (readOnly) return
     try {
       const response = await fetch(`/api/accounts/${accountId}`, {
         method: 'PATCH',
@@ -95,7 +99,7 @@ export default function AccountsPage() {
 
       setAccounts(prev =>
         prev.map(account =>
-          account.id === accountId ? { ...account, active } : account
+          account.id === accountId ? { ...account, is_active: active } : account
         )
       )
     } catch (error) {
@@ -105,6 +109,7 @@ export default function AccountsPage() {
   }
 
   const handleRefresh = (accountId: string) => {
+    if (readOnly) return
     // 在实际应用中，这里会触发抓取任务
     // 为简化，我们只更新最后抓取时间
     setAccounts(prev =>
@@ -154,15 +159,22 @@ export default function AccountsPage() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+              {readOnly && (
+                <span className="px-3 py-2 text-sm bg-yellow-100 text-yellow-800 rounded-md">
+                  当前为只读模式，所有变更操作已禁用
+                </span>
+              )}
               <button
                 onClick={() => setShowImportDialog(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                disabled={readOnly}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 批量导入
               </button>
               <button
                 onClick={() => setShowAddDialog(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                disabled={readOnly}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 新增账号
               </button>
@@ -199,6 +211,7 @@ export default function AccountsPage() {
           onRefresh={handleRefresh}
           onUpdateStar={handleUpdateStar}
           onToggleActive={handleToggleActive}
+          readOnly={readOnly}
         />
 
         {/* Tips */}

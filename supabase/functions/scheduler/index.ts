@@ -1,13 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { fetchRateLimits, nextDelay, onResponse, checkDailyQuota, logFetchAttempt } from '../_shared/rate-limiter'
+import { fetchRateLimits, nextDelay, onResponse, checkDailyQuota, logFetchAttempt } from '../_shared/rate-limiter.ts'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase credentials for scheduler function')
+}
+const READ_ONLY_MODE = Deno.env.get('READ_ONLY_MODE') === 'true'
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function handleScheduledFetch() {
   console.log('🔄 Starting scheduled fetch...')
+
+  if (READ_ONLY_MODE) {
+    console.log('🚫 Scheduler disabled: read-only mode is active')
+    return { success: false, reason: 'read_only_mode' }
+  }
 
   try {
     // Get rate limits and check daily quota

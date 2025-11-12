@@ -17,7 +17,10 @@ export interface Database {
           seed_url: string
           star: number
           is_active: boolean
+          last_fetched: string | null
+          article_count: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -26,7 +29,10 @@ export interface Database {
           seed_url: string
           star: number
           is_active?: boolean
+          last_fetched?: string | null
+          article_count?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -35,7 +41,10 @@ export interface Database {
           seed_url?: string
           star?: number
           is_active?: boolean
+          last_fetched?: string | null
+          article_count?: number
           created_at?: string
+          updated_at?: string
         }
       }
       articles: {
@@ -49,6 +58,7 @@ export interface Database {
           summary: string | null
           tags: string[]
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -60,6 +70,7 @@ export interface Database {
           summary?: string | null
           tags?: string[]
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -71,6 +82,7 @@ export interface Database {
           summary?: string | null
           tags?: string[]
           created_at?: string
+          updated_at?: string
         }
       }
       scores: {
@@ -78,16 +90,19 @@ export interface Database {
           article_id: string
           time_window: '24h' | '3d' | '7d' | '30d'
           proxy_heat: number
+          recalculated_at: string
         }
         Insert: {
           article_id: string
           time_window: '24h' | '3d' | '7d' | '30d'
           proxy_heat: number
+          recalculated_at?: string
         }
         Update: {
           article_id?: string
           time_window?: '24h' | '3d' | '7d' | '30d'
           proxy_heat?: number
+          recalculated_at?: string
         }
       }
       settings: {
@@ -137,6 +152,7 @@ export interface Database {
           http_status: number | null
           retries: number
           message: string | null
+          duration_ms: number | null
         }
         Insert: {
           id?: string
@@ -147,6 +163,7 @@ export interface Database {
           http_status?: number | null
           retries?: number
           message?: string | null
+          duration_ms?: number | null
         }
         Update: {
           id?: string
@@ -157,6 +174,7 @@ export interface Database {
           http_status?: number | null
           retries?: number
           message?: string | null
+          duration_ms?: number | null
         }
       }
     }

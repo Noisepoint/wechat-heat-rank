@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         read_count,
         like_count
       `)
-      .eq('accounts.active', true)
+      .eq('accounts.is_active', true)
 
     // 时间窗口过滤
     if (filters.window) {

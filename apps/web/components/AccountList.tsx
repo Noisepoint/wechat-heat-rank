@@ -9,6 +9,7 @@ interface AccountListProps {
   onRefresh: (accountId: string) => void
   onUpdateStar: (accountId: string, star: number) => void
   onToggleActive: (accountId: string, active: boolean) => void
+  readOnly?: boolean
 }
 
 export default function AccountList({
@@ -16,7 +17,8 @@ export default function AccountList({
   loading,
   onRefresh,
   onUpdateStar,
-  onToggleActive
+  onToggleActive,
+  readOnly = false
 }: AccountListProps) {
   const [refreshingAccounts, setRefreshingAccounts] = useState<Set<string>>(new Set())
 
@@ -31,6 +33,7 @@ export default function AccountList({
   }
 
   const handleRefresh = async (accountId: string) => {
+    if (readOnly) return
     setRefreshingAccounts(prev => new Set(prev).add(accountId))
 
     try {
@@ -53,11 +56,13 @@ export default function AccountList({
   }
 
   const handleStarChange = (accountId: string, newStar: number) => {
+    if (readOnly) return
     onUpdateStar(accountId, newStar)
   }
 
-  const handleToggleActive = (accountId: string, active: boolean) => {
-    onToggleActive(accountId, active)
+  const handleToggleActive = (accountId: string, isActive: boolean) => {
+    if (readOnly) return
+    onToggleActive(accountId, isActive)
   }
 
   if (loading && accounts.length === 0) {
@@ -121,7 +126,8 @@ export default function AccountList({
                     <select
                       value={account.star}
                       onChange={(e) => handleStarChange(account.id, parseInt(e.target.value))}
-                      className="text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                      disabled={readOnly}
+                      className="text-sm border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       {[1, 2, 3, 4, 5].map(star => (
                         <option key={star} value={star}>
@@ -152,29 +158,30 @@ export default function AccountList({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      account.active
+                      account.is_active
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    {account.active ? '启用' : '停用'}
+                  {account.is_active ? '启用' : '停用'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end space-x-2">
                     <button
-                      onClick={() => handleToggleActive(account.id, !account.active)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                        account.active
+                      onClick={() => handleToggleActive(account.id, !account.is_active)}
+                      disabled={readOnly}
+                      className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        account.is_active
                           ? 'bg-red-100 text-red-700 hover:bg-red-200'
                           : 'bg-green-100 text-green-700 hover:bg-green-200'
                       }`}
                     >
-                      {account.active ? '停用' : '启用'}
+                      {account.is_active ? '停用' : '启用'}
                     </button>
                     <button
                       onClick={() => handleRefresh(account.id)}
-                      disabled={refreshingAccounts.has(account.id)}
+                      disabled={refreshingAccounts.has(account.id) || readOnly}
                       className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {refreshingAccounts.has(account.id) ? '刷新中...' : '刷新'}

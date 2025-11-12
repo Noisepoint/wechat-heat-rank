@@ -59,8 +59,18 @@ serve(async (req) => {
     }
 
     // 初始化Supabase客户端
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
+    const supabaseKey =
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+      Deno.env.get('SERVICE_ROLE_KEY') ??
+      Deno.env.get('SUPABASE_ANON_KEY') ??
+      Deno.env.get('ANON_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      return {
+        status: 500,
+        body: { error: 'Missing Supabase credentials' }
+      }
+    }
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     console.log(`🔍 查询参数: window=${window}, limit=${limit}`)

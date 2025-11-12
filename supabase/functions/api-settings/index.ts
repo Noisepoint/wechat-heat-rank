@@ -9,13 +9,14 @@ import {
   previewWeightChanges,
   validateHeatWeights,
   DEFAULT_SETTINGS
-} from '../_shared/settings-manager'
+} from '../_shared/settings-manager.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('EDGE_SUPABASE_URL')
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase credentials for settings API')
 }
+const READ_ONLY_MODE = Deno.env.get('READ_ONLY_MODE') === 'true'
 
 serve(async (req) => {
   const corsHeaders = {
@@ -70,6 +71,15 @@ serve(async (req) => {
 
     // POST /api/settings - 保存单个设置
     if (req.method === 'POST' && url.pathname === '/api/settings') {
+      if (READ_ONLY_MODE) {
+        return new Response(
+          JSON.stringify({ error: 'Settings API is read-only' }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
       const body = await req.json()
       const { key, value } = body
 
@@ -95,6 +105,15 @@ serve(async (req) => {
 
     // POST /api/settings/save-with-history - 保存设置并创建历史快照
     if (req.method === 'POST' && url.pathname === '/api/settings/save-with-history') {
+      if (READ_ONLY_MODE) {
+        return new Response(
+          JSON.stringify({ error: 'Settings API is read-only' }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
       const body = await req.json()
       const { key, value } = body
 
@@ -120,6 +139,15 @@ serve(async (req) => {
 
     // POST /api/settings/preview - 预览权重变化
     if (req.method === 'POST' && url.pathname === '/api/settings/preview') {
+      if (READ_ONLY_MODE) {
+        return new Response(
+          JSON.stringify({ error: 'Settings API is read-only' }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
       const body = await req.json()
       const { weights } = body
 
@@ -157,6 +185,15 @@ serve(async (req) => {
 
     // POST /api/settings/rollback - 回滚设置
     if (req.method === 'POST' && url.pathname === '/api/settings/rollback') {
+      if (READ_ONLY_MODE) {
+        return new Response(
+          JSON.stringify({ error: 'Settings API is read-only' }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
       const body = await req.json()
       const { historyId } = body
 

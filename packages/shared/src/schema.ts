@@ -7,7 +7,11 @@ export const AccountSchema = z.object({
   biz_id: z.string(),
   seed_url: z.string().url(),
   star: z.number().int().min(1).max(5),
+  is_active: z.boolean(),
+  last_fetched: z.string().datetime().nullable().optional(),
+  article_count: z.number().int(),
   created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
 });
 
 export const ArticleSchema = z.object({
@@ -20,11 +24,12 @@ export const ArticleSchema = z.object({
   summary: z.string().optional(),
   tags: z.array(z.string()),
   created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
 });
 
 export const ScoreSchema = z.object({
   article_id: z.string().uuid(),
-  window: z.enum(['24h', '3d', '7d', '30d']),
+  time_window: z.enum(['24h', '3d', '7d', '30d']),
   proxy_heat: z.number().min(0).max(100),
 });
 

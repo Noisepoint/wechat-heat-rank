@@ -1,6 +1,6 @@
 
 -- ============================================
--- WeChat HeatRank · Official DB Init (Spec + Patch, v2 - time_window)
+-- WeChat HeatRank · Official DB Init (Spec + Patch, v2)
 -- Safe to run multiple times
 -- ============================================
 
@@ -13,7 +13,10 @@ create table if not exists public.accounts(
   seed_url text not null,
   star int not null check (star between 1 and 5),
   is_active boolean not null default true,
-  created_at timestamptz not null default now()
+  last_fetched timestamptz,
+  article_count int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.articles(
@@ -25,13 +28,15 @@ create table if not exists public.articles(
   url text not null unique,
   summary text,
   tags text[] default '{}',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.scores(
   article_id uuid not null references public.articles(id) on delete cascade,
   time_window text not null check (time_window in ('24h','3d','7d','30d')),
   proxy_heat numeric not null,
+  recalculated_at timestamptz not null default now(),
   primary key(article_id, time_window)
 );
 
@@ -56,14 +61,16 @@ create table if not exists public.fetch_logs(
   ok boolean,
   http_status int,
   retries int default 0,
-  message text
+  message text,
+  duration_ms int,
+  constraint fetch_logs_duration_nonnegative check (duration_ms is null or duration_ms >= 0)
 );
 
 create index if not exists idx_articles_pub_time
   on public.articles(pub_time desc);
 create index if not exists idx_articles_account_time
   on public.articles(account_id, pub_time desc);
-create index if not exists idx_scores_window_heat
+create index if not exists idx_scores_time_window_heat
   on public.scores(time_window, proxy_heat desc);
 create index if not exists idx_articles_tags_gin
   on public.articles using gin (tags);

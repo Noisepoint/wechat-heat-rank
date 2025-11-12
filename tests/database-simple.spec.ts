@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, readdirSync } from 'fs'
 import { join } from 'path'
 
 describe('Database Structure - Simplified Tests for T2', () => {
@@ -20,26 +20,28 @@ describe('Database Structure - Simplified Tests for T2', () => {
 
     it('should have essential migration files', () => {
       const migrationsDir = join(projectRoot, 'supabase/migrations')
+      const migrations = readdirSync(migrationsDir)
 
-      // Check for essential table migration files (using timestamp naming)
-      const essentialFiles = [
-        '1762788468_accounts.sql',
-        '1762788468_articles.sql',
-        '1762788468_scores.sql',
-        '1762788468_settings.sql'
-      ]
+      const requiredSuffixes = ['_accounts.sql', '_articles.sql', '_scores.sql', '_settings.sql']
 
-      essentialFiles.forEach(file => {
-        const filePath = join(migrationsDir, file)
-        expect(existsSync(filePath), `Migration file ${file} should exist`).toBe(true)
+      requiredSuffixes.forEach(suffix => {
+        const match = migrations.find(name => name.endsWith(suffix))
+        expect(match, `Migration file ending with ${suffix} should exist`).toBeTruthy()
       })
     })
   })
 
   describe('Database schema structure', () => {
-    it('should have accounts table definition', () => {
+    const getMigrationPath = (suffix: string) => {
       const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const accountsMigration = join(migrationsDir, '1762788468_accounts.sql')
+      const migrations = readdirSync(migrationsDir)
+      const match = migrations.find(name => name.endsWith(suffix))
+      expect(match, `Migration file ending with ${suffix} not found`).toBeTruthy()
+      return join(migrationsDir, match!)
+    }
+
+    it('should have accounts table definition', () => {
+      const accountsMigration = getMigrationPath('_accounts.sql')
 
       if (existsSync(accountsMigration)) {
         const content = readFileSync(accountsMigration, 'utf-8')
@@ -53,8 +55,7 @@ describe('Database Structure - Simplified Tests for T2', () => {
     })
 
     it('should have articles table with foreign key', () => {
-      const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const articlesMigration = join(migrationsDir, '1762788468_articles.sql')
+      const articlesMigration = getMigrationPath('_articles.sql')
 
       if (existsSync(articlesMigration)) {
         const content = readFileSync(articlesMigration, 'utf-8')
@@ -67,9 +68,8 @@ describe('Database Structure - Simplified Tests for T2', () => {
       }
     })
 
-    it('should have scores table with time_window', () => {
-      const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const scoresMigration = join(migrationsDir, '1762788468_scores.sql')
+    it('should have scores table with time_window column', () => {
+      const scoresMigration = getMigrationPath('_scores.sql')
 
       if (existsSync(scoresMigration)) {
         const content = readFileSync(scoresMigration, 'utf-8')
@@ -77,14 +77,13 @@ describe('Database Structure - Simplified Tests for T2', () => {
         // Check for scores table with time_window column
         expect(content).toMatch(/create table.*scores/i)
         expect(content).toMatch(/article_id.*uuid.*references.*articles/i)
-        expect(content).toMatch(/window.*text/i)
+        expect(content).toMatch(/time_window.*text/i)
         expect(content).toMatch(/proxy_heat.*numeric/i)
       }
     })
 
     it('should have settings table with jsonb value', () => {
-      const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const settingsMigration = join(migrationsDir, '1762788468_settings.sql')
+      const settingsMigration = getMigrationPath('_settings.sql')
 
       if (existsSync(settingsMigration)) {
         const content = readFileSync(settingsMigration, 'utf-8')
@@ -131,21 +130,20 @@ describe('Database Structure - Simplified Tests for T2', () => {
   describe('Indexes and constraints', () => {
     it('should have indexes file', () => {
       const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const indexesFile = join(migrationsDir, '1762788468_indexes.sql')
-
-      expect(existsSync(indexesFile), 'Indexes file should exist').toBe(true)
+      const migrations = readdirSync(migrationsDir)
+      const indexesFile = migrations.find(name => name.endsWith('_indexes.sql'))
+      expect(indexesFile, 'Indexes file should exist').toBeTruthy()
     })
 
     it('should define proper indexes', () => {
       const migrationsDir = join(projectRoot, 'supabase/migrations')
-      const indexesFile = join(migrationsDir, '1762788468_indexes.sql')
+      const migrations = readdirSync(migrationsDir)
+      const indexesFile = migrations.find(name => name.endsWith('_indexes.sql'))
+      expect(indexesFile, 'Indexes file should exist').toBeTruthy()
 
-      if (existsSync(indexesFile)) {
-        const content = readFileSync(indexesFile, 'utf-8')
-
-        // Check for index definitions
-        expect(content).toMatch(/create index/i)
-      }
+      const content = readFileSync(join(migrationsDir, indexesFile!), 'utf-8')
+      // Check for index definitions
+      expect(content).toMatch(/create index/i)
     })
   })
 
@@ -161,7 +159,8 @@ describe('Database Structure - Simplified Tests for T2', () => {
       const essentialFunctions = [
         'fetch-articles/index.ts',
         'articles-api/index.ts',
-        'api/settings/index.ts',
+        'api-settings/index.ts',
+        'api-refresh/index.ts',
         'scheduler/index.ts'
       ]
 

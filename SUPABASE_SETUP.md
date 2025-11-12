@@ -61,6 +61,8 @@ cp .env.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+READ_ONLY_MODE=false
+NEXT_PUBLIC_READ_ONLY_MODE=false
 
 # 调度配置 (每2小时抓取一次)
 CRON_INTERVAL_HOURS=2
@@ -223,6 +225,8 @@ SELECT * FROM accounts LIMIT 1;
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+READ_ONLY_MODE=true
+NEXT_PUBLIC_READ_ONLY_MODE=true
 ```
 
 ### 2. CORS 配置
