@@ -145,7 +145,9 @@ export async function GET(request: NextRequest) {
       .select('biz_id')
       .in('biz_id', paginatedAccounts.map(acc => acc.biz_id))
 
-    const existingBizIds = new Set(existingAccounts?.map(acc => acc.biz_id) || [])
+    const existingBizIds = new Set<string>(
+      ((existingAccounts as Array<{ biz_id: string }> | null)?.map(acc => acc.biz_id)) ?? []
+    )
 
     const accountsWithStatus = paginatedAccounts.map(account => ({
       ...account,
